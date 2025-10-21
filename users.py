@@ -28,7 +28,7 @@ def signUp(input: Simple):
             WHERE email = :email
                              """
         )
-        existing = db.execute(duplicate_query, {"email": input.email})
+        existing = db.execute(duplicate_query, {"email": input.email}).fetchone()
         if existing:
                 raise HTTPException(status_code=400, detail="Email already exists")
 

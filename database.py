@@ -14,7 +14,8 @@ DB_PORT = os.getenv("DB_PORT")
 db_url = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 print(f"db_url : {db_url}")
 
-engine = create_engine(db_url)
+engine = create_engine(db_url,
+          connect_args= {"client_flag": CLIENT.MULTIL}             )
 Session = sessionmaker(bind=engine)
 db = Session()
 

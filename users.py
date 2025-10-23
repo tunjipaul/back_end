@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import bcrypt
 import uvicorn
 
+
 load_dotenv()
 
 app = FastAPI(title="Simple App", version="1.0.0")
@@ -16,6 +17,7 @@ class Simple(BaseModel):
     name: str = Field(..., example="Sam Larry")
     email: str = Field(..., example="sam@email.com")
     password: str = Field(..., example="sam123")
+    userType: str = Field(..., example = "student")
 
 
 @app.post("/signup")
@@ -30,12 +32,12 @@ def signUp(input: Simple):
         )
         existing = db.execute(duplicate_query, {"email": input.email}).fetchone()
         if existing:
-                raise HTTPException(status_code=400, detail="Email already exists")
+            raise HTTPException(status_code=400, detail="Email already exists")
 
         query = text(
             """
             INSERT INTO users (name, email, password)
-            VALUES (:name, :email, :password)
+            VALUES (:name, :email, :password, :userType)
         """
         )
 
@@ -50,14 +52,43 @@ def signUp(input: Simple):
 
         return {
             "message": "User created successfully",
-            "data": {"name": input.name, "email": input.email},
+            "data": {"name": input.name, "email": input.email, "userType": input.userType},
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
     finally:
-         db.close()
+        db.close()
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., example="sam@email.com")
+    password: str = Field(..., example="sam123")
+
+
+@app.post("/login")
+def login(input: LoginRequest):
+    try:
+        query_2 = text(
+            """
+             SELECT * FROM users WHERE email = :email
+"""
+        )
+        result = db.execute(query_2, {"email": input.email}).fetchone()
+
+        if not result:
+            raise HTTPException(status_code=404, detail= "invalid email or password")
+        verified_password = bcrypt.checkpw(input.password.encode('utf-8'), result.password.encode('utf-8'))
+
+        if not verified_password:
+            raise HTTPException(status_code= 404, detail="invalid email or password")
+        
+        return {
+            "message": "Login Successful"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
